@@ -12,6 +12,7 @@ void executeCommand(DirectoryTree *currentDirectoryTree, char *command) {
     
     if (!strcmp(var, "mkdir")) {
         var = strtok(NULL, " ");
+        Mkdir(currentDirectoryTree, var);
         //mkdir 코드 구현 
     } else if (!strcmp(var, "touch")) {
         var = strtok(NULL, " ");

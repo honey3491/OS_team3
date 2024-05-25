@@ -1,4 +1,5 @@
 #include "../header/main.h"
+
 int Mode2Permission(DirectoryNode* dirNode)
 {
     char buffer[4];
@@ -20,10 +21,10 @@ int Mode2Permission(DirectoryNode* dirNode)
 
 int HasPermission(DirectoryNode* dirNode, char o)
 {
-    if(usrList->current->UID == 0)
+    if(usrList->current->id.UID== 0)
         return 0;
 
-    if(usrList->current->UID == dirNode->UID){
+    if(usrList->current->id.UID == dirNode->id.UID){
         if(o == 'r'){
             if(dirNode->permission[0] == 0)
                 return -1;
@@ -43,7 +44,7 @@ int HasPermission(DirectoryNode* dirNode, char o)
                 return 0;
         }
     }
-    else if(usrList->current->GID == dirNode->GID){
+    else if(usrList->current->id.GID == dirNode->id.GID){
         if(o == 'r'){
             if(dirNode->permission[3] == 0)
                 return -1;
@@ -175,13 +176,76 @@ char* getDir(char* dirPath)
     return tmpPath;
 }
 
+int moveCurrent(DirectoryTree* currentDirectoryTree, char* dirPath)
+{
+    DirectoryNode* tempNode = NULL;
+    if(strcmp(dirPath,".") == 0){
+    }
+    else if(strcmp(dirPath,"..") == 0){
+        if(currentDirectoryTree->current != currentDirectoryTree->root){
+            currentDirectoryTree->current = currentDirectoryTree->current->parent;
+        }
+    }
+    else{
+        tempNode = IsExistDir(currentDirectoryTree, dirPath, 'd');
+        if(tempNode != NULL){
+            currentDirectoryTree->current = tempNode;
+        }
+        else
+            return -1;
+    }
+    return 0;
+}
+
+int movePath(DirectoryTree* currentDirectoryTree, char* dirPath)
+{
+    DirectoryNode* tempNode = NULL;
+    char tempPath[MAX_DIR];
+    char* str = NULL;
+    int val = 0;
+    strncpy(tempPath, dirPath, MAX_DIR);
+    tempPath[MAX_DIR - 1] = '\0'; // 보안을 위해 널 종료 문자를 추가
+    tempNode = currentDirectoryTree->current;
+
+    strncpy(tmpPath, dirPath, MAX_DIR);
+    tmpNode = dirTree->current;
+    //입력 값이 루트로 가는 값일 때ㅐ
+
+    if(strcmp(dirPath, "/") == 0){
+        currentDirectoryTree->current = currentDirectoryTree->root;
+    }
+    else{
+        //if input is absolute path
+        if(dirPath[0] == '/'){
+            currentDirectoryTree->current = currentDirectoryTree->root; // Set current to root for absolute path
+            // 이 부분을 수정하여 절대 경로를 올바르게 처리
+            str = strtok(tempPath + 1, "/"); // +1 to skip the first '/'
+        } else {
+            // Relative path, start tokenizing from the beginning
+            str = strtok(tempPath, "/");
+        }
+        while(str != NULL){
+            val = MoveCurrent(dirTree, str);
+            //경로가 존재하지 않을 때
+
+            val = moveCurrent(currentDirectoryTree, str);
+            //if input path doesn't exist
+            if(val != 0){
+                currentDirectoryTree->current = tempNode; // Restore original current node
+                return -1;
+            }
+            str = strtok(NULL, "/");
+        }
+    }
+    return 0;
+}
 
 void* mkdirThread(void* arg) {
-    ThreadTree* threadTree = (ThreadTree*)arg;
+    ThreadTree* t1 = (ThreadTree*)arg;
   
-    DirectoryTree* currentDirectoryTree = threadTree->threadTree;
-    char* cmd = threadTree->command;
-    int option = threadTree->option;
+    DirectoryTree* currentDirectoryTree = t1->threadTree;
+    char* cmd = t1->command;
+    int option = t1->option;
 
     DirectoryNode* tmpNode = currentDirectoryTree->current;
 
@@ -257,7 +321,6 @@ void* mkdirThread(void* arg) {
 }
 
 int Mkdir(DirectoryTree* currentDirectoryTree, char* cmd)
-
 {
     DirectoryNode *tmpNode = NULL;
     char *str;
